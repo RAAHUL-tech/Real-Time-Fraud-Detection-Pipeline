@@ -1,0 +1,17 @@
+# sweep.yaml
+program: src/train.py
+method: bayes  
+metric:
+  name: val_auroc
+  goal: maximize
+
+parameters:
+  train.lr:
+    min: 0.0001
+    max: 0.01
+  train.dropout:
+    values: [0.1, 0.2, 0.3, 0.5]
+  train.batch_size:
+    values: [128, 256, 512]
+  wandb.group:
+    value: sweep_run

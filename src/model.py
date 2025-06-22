@@ -1,22 +1,23 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 from torchmetrics.classification import BinaryAUROC, BinaryAccuracy, BinaryPrecision, BinaryRecall
 
 class FraudModel(LightningModule):
-    def __init__(self, input_dim=29, lr=1e-3):
+    def __init__(self, input_dim=29, hidden_dim=64, dropout=0.2, lr=1e-3):
         super().__init__()
         self.save_hyperparameters()
+
         self.model = nn.Sequential(
-            nn.Linear(input_dim, 64),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(64, 32),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(32, 1)
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, 1)
         )
+
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.auroc = BinaryAUROC()
         self.accuracy = BinaryAccuracy()

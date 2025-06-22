@@ -1,15 +1,22 @@
-from pytorch_lightning import Trainer
-from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from src.datamodule import FraudDataModule
-from src.model import FraudModel
+from datamodule import FraudDataModule
+from model import FraudModel
 import torch
 import pandas as pd
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+import torch.onnx
+from dotenv import load_dotenv
+import json
+import hydra
+from omegaconf import DictConfig
+import wandb
+from pytorch_lightning.loggers import WandbLogger
 
-def plot_confusion_matrix(y_true, y_pred, save_path="confusion_matrix.png"):
+def plot_confusion_matrix(y_true, y_pred, save_path="results/confusion_matrix.png"):
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Not Fraud", "Fraud"], yticklabels=["Not Fraud", "Fraud"])
@@ -37,30 +44,82 @@ def test_model(model, datamodule):
     print(classification_report(y_true, y_pred, target_names=["Not Fraud", "Fraud"]))
     plot_confusion_matrix(y_true, y_pred)
 
-if __name__ == "__main__":
-    datamodule = FraudDataModule(data_dir="data/processed", batch_size=256)
-    model = FraudModel(input_dim=29)
 
-    logger = CSVLogger("logs", name="fraud_detection")
+
+def export_to_onnx(model, save_path="models/fraud_model.onnx"):
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    dummy_input = torch.randn(1, 29)  # input_dim = 29
+    torch.onnx.export(
+        model,
+        dummy_input,
+        save_path,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+        opset_version=17,
+        do_constant_folding=True
+    )
+    print(f"[INFO] Model exported to ONNX at: {save_path}")
+
+
+def export_io_schema(save_path="models/fraud_model_schema.json"):
+    schema = {
+        "input": {
+            "name": "input",
+            "shape": ["batch_size", 29],
+            "dtype": "float32",
+            "description": "29 input features (V1–V28, Amount)"
+        },
+        "output": {
+            "name": "output",
+            "shape": ["batch_size", 1],
+            "dtype": "float32",
+            "description": "Sigmoid probability of fraud"
+        }
+    }
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    with open(save_path, "w") as f:
+        json.dump(schema, f, indent=4)
+    print(f"[INFO] ONNX schema exported to: {save_path}")
+
+@hydra.main(config_path="../configs", config_name="config", version_base="1.3")
+def main(cfg: DictConfig):
+    load_dotenv()
+    os.environ["WANDB_API_KEY"] = os.getenv("WANDB_API_KEY")
+    seed_everything(cfg.train.seed)
+    datamodule = FraudDataModule(data_dir=cfg.data.path, batch_size=cfg.train.batch_size)
+    model = FraudModel(input_dim=cfg.data.input_dim, lr=cfg.train.lr)
+
+    # Init W&B
+    wandb_logger = WandbLogger(
+        project=cfg.wandb.project,
+        entity=cfg.wandb.entity,
+        log_model=cfg.wandb.log_model,
+        job_type=cfg.wandb.job_type,
+        group=cfg.wandb.group,
+        tags=cfg.wandb.tags,
+        name=f"dropout_{cfg.train.dropout}_lr_{cfg.train.lr}"
+    )
+
+
 
     checkpoint_cb = ModelCheckpoint(
-        monitor="val_auroc",
-        mode="max",
-        save_top_k=1,
-        filename="best-checkpoint",
-        dirpath="checkpoints/"
+        monitor=cfg.checkpoint.monitor,
+        mode=cfg.checkpoint.mode,
+        save_top_k=cfg.checkpoint.save_top_k,
+        filename=cfg.checkpoint.filename,
+        dirpath=cfg.checkpoint.dirpath
     )
 
     early_stop_cb = EarlyStopping(
-        monitor="val_auroc",
-        patience=3,
-        mode="max",
-        verbose=True
+        monitor=cfg.early_stop.monitor,
+        patience=cfg.early_stop.patience,
+        mode=cfg.early_stop.mode
     )
 
     trainer = Trainer(
-        max_epochs=10,
-        logger=logger,
+        max_epochs=cfg.train.max_epochs,
+        logger=wandb_logger,
         callbacks=[checkpoint_cb, early_stop_cb],
         accelerator="auto",
         log_every_n_steps=1
@@ -71,3 +130,10 @@ if __name__ == "__main__":
     # Load best model for testing
     best_model = FraudModel.load_from_checkpoint(checkpoint_cb.best_model_path)
     test_model(best_model, datamodule)
+    export_to_onnx(best_model, save_path="models/fraud_model.onnx")
+    export_io_schema(save_path="models/fraud_model_schema.json")
+
+    wandb.finish()
+
+if __name__ == "__main__":
+    main()

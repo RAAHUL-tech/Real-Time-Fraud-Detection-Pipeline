@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+
+# === Training Config ===
+train:
+  max_epochs: 10
+  batch_size: 256
+  lr: 0.001
+  dropout: 0.2
+  seed: 42
+
+# === Data Config ===
+data:
+  path: data/processed
+  input_dim: 29
+
+# === Logging & W&B ===
+wandb:
+  project: fraud-detection
+  entity: rahulkrish28-california-state-university-fullerton   
+  log_model: true
+  job_type: train
+  group: baseline
+  tags: ["baseline", "fraud", "v1"]
+
+# === Checkpointing ===
+checkpoint:
+  monitor: val_auroc
+  mode: max
+  save_top_k: 1
+  dirpath: models/checkpoints
+  filename: best-checkpoint
+
+# === Early Stopping ===
+early_stop:
+  monitor: val_auroc
+  patience: 3
+  mode: max
