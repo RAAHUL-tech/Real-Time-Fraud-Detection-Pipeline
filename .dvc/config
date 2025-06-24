@@ -1,8 +1,7 @@
-[core]
-    remote = s3remote
 ['remote "s3remote"']
     url = s3://fraud-detection-dataset-raahul/dvcstore
-    endpointurl = https://s3.amazonaws.com
-    access_key_id = use_env
-    secret_access_key = use_env
+    endpointurl = https://s3.us-west-1.amazonaws.com
     region = us-west-1
+
+['core']
+    remote = s3remote
