@@ -36,3 +36,8 @@ early_stop:
   monitor: val_auroc
   patience: 3
   mode: max
+
+mlflow:
+  tracking_uri: "file:///D:/PG_PROJECTS/Real-Time-Fraud-Detection-Pipeline/mlruns"
+  experiment_name: "fraud_detection_experiment"
+  model_name: "FraudDetectionModel"

@@ -3,8 +3,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from datamodule import FraudDataModule
 from model import FraudModel
 import torch
-import pandas as pd
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -15,6 +14,8 @@ import hydra
 from omegaconf import DictConfig
 import wandb
 from pytorch_lightning.loggers import WandbLogger
+import mlflow
+import mlflow.pytorch
 
 def plot_confusion_matrix(y_true, y_pred, save_path="results/confusion_matrix.png"):
     cm = confusion_matrix(y_true, y_pred)
@@ -40,10 +41,14 @@ def test_model(model, datamodule):
             y_true.extend(y.numpy())
             y_pred.extend(preds.numpy())
 
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+
     print("\n[INFO] Classification Report:")
     print(classification_report(y_true, y_pred, target_names=["Not Fraud", "Fraud"]))
     plot_confusion_matrix(y_true, y_pred)
-
+    return precision, recall, f1
 
 
 def export_to_onnx(model, save_path="models/fraud_model.onnx"):
@@ -129,9 +134,27 @@ def main(cfg: DictConfig):
 
     # Load best model for testing
     best_model = FraudModel.load_from_checkpoint(checkpoint_cb.best_model_path)
-    test_model(best_model, datamodule)
+    precision, recall, f1 = test_model(best_model, datamodule)
     export_to_onnx(best_model, save_path="models/fraud_model.onnx")
     export_io_schema(save_path="models/fraud_model_schema.json")
+    
+    # MLflow: model registry and deployment
+    mlflow.set_tracking_uri("file:///D:/PG_PROJECTS/Real-Time-Fraud-Detection-Pipeline/mlruns")
+    mlflow.set_experiment("fraud_detection_experiment")
+
+    with mlflow.start_run(run_name=f"dropout_{cfg.train.dropout}_lr_{cfg.train.lr}"):
+        mlflow.log_params({
+            "dropout": cfg.train.dropout,
+            "lr": cfg.train.lr,
+            "batch_size": cfg.train.batch_size,
+            "epochs": cfg.train.max_epochs
+        })
+        mlflow.log_metric("precision", precision)
+        mlflow.log_metric("recall", recall)
+        mlflow.log_metric("f1_score", f1)
+
+        # Register model
+        mlflow.pytorch.log_model(best_model, artifact_path="model", registered_model_name="FraudDetectionModel")
 
     wandb.finish()
 

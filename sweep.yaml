@@ -1,6 +1,7 @@
-# sweep.yaml
-program: src/train.py
-method: bayes  
+program: run_train.py
+
+method: bayes
+
 metric:
   name: val_auroc
   goal: maximize
