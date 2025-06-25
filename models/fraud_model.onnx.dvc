@@ -1,0 +1,5 @@
+outs:
+- md5: 467029fc76eb4c869b450e7706dac93f
+  size: 17032
+  hash: md5
+  path: fraud_model.onnx

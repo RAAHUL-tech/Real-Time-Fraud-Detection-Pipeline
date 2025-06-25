@@ -1,0 +1,20 @@
+{
+    "input": {
+        "name": "input",
+        "shape": [
+            "batch_size",
+            29
+        ],
+        "dtype": "float32",
+        "description": "29 input features (V1\u2013V28, Amount)"
+    },
+    "output": {
+        "name": "output",
+        "shape": [
+            "batch_size",
+            1
+        ],
+        "dtype": "float32",
+        "description": "Sigmoid probability of fraud"
+    }
+}
