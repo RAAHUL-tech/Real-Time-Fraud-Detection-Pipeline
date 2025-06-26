@@ -1,0 +1,39 @@
+name: Deploy Lambda Inference
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-west-1
+      LAMBDA_FUNCTION_NAME: fraud-inference-lambda
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Lambda Docker Image
+        run: |
+          cd lambda
+          docker build -t fraud-inference-lambda .
+
+      - name: Push to ECR & Deploy
+        run: |
+          ECR_URI=$(aws ecr describe-repositories --repository-names fraud-inference-lambda --query 'repositories[0].repositoryUri' --output text)
+          docker tag fraud-inference-lambda:latest $ECR_URI:latest
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
+          docker push $ECR_URI:latest
+          aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --image-uri $ECR_URI:latest
