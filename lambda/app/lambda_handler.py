@@ -3,6 +3,9 @@ import onnxruntime as ort
 import numpy as np
 import os
 import time
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # Load ONNX model once at cold start
 model_path = os.path.join(os.path.dirname(__file__), "fraud_model.onnx")
@@ -28,6 +31,11 @@ def lambda_handler(event, context):
 
             prediction = float(output[0][0][0])
             print(f"[INFO] Prediction: {prediction:.4f}, Inference time: {inference_time:.2f} ms")
+            logger.info(json.dumps({
+               "prediction": float(prediction),
+               "inference_time_ms": round(inference_time, 3),
+               "features": features
+            }))
 
         except Exception as e:
             print(f"[ERROR] Failed processing record: {e}")

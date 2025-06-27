@@ -21,7 +21,7 @@ if "Amount" in df.columns:
     df["Amount"] = scaler.fit_transform(df[["Amount"]])
 
 # Simulate real-time data messages
-for i in range(1):
+for i in range(50):
     row = df.sample(1).values.flatten().tolist()
     message = {"features": row}
     
