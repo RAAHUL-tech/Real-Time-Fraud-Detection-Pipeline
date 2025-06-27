@@ -14,7 +14,7 @@ def lambda_handler(event, context):
     for record in event["Records"]:
         try:
             data = json.loads(record["body"])
-
+            print(data)
             # Extract and validate features
             features = data.get("features")
             if not features or len(features) != 29:
