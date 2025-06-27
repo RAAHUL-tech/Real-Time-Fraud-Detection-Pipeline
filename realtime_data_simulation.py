@@ -4,6 +4,7 @@ import json
 import time
 import random
 import os
+from dotenv import load_dotenv
 from sklearn.preprocessing import StandardScaler
 from evidently.report import Report
 from evidently.metric_preset import DataDriftPreset
@@ -11,7 +12,10 @@ import pandas as pd
 
 # Initialize SQS client
 sqs = boto3.client("sqs", region_name="us-west-1")
-QUEUE_URL = "https://sqs.us-west-1.amazonaws.com/354918375950/fraud-detection"
+load_dotenv()
+QUEUE_URL = os.getenv("SQS_QUEUE_URL")
+if QUEUE_URL is None:
+    raise ValueError("SQS_QUEUE_URL is not set in the environment variables.")
 
 os.makedirs("data", exist_ok=True)
 simulated_data_path = "data/real_time_simulated.csv"
