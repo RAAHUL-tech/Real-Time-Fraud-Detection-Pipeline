@@ -194,6 +194,5 @@ cython_debug/
 .cursorindexingignore
 models/checkpoints
 outputs
-results
 wandb
 mlruns
