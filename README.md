@@ -76,6 +76,11 @@ dvc push
 ```bash
 uv python src/train.py
 ```
+You can also use docker to run the training scripts,
+```bash
+docker build -t fraud-detection-app:latest .
+docker run fraud-detection-app:latest
+```
 ####  With Weights & Biases Sweep
 ```bash
 wandb sweep sweep.yaml
