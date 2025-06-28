@@ -81,16 +81,25 @@ You can also use docker to run the training scripts,
 docker build -t fraud-detection-app:latest .
 docker run fraud-detection-app:latest
 ```
+![Screenshot (54)](https://github.com/user-attachments/assets/5bc56e75-19ce-4aa2-8c4f-5203b3aaf1a9)
+![Screenshot (56)](https://github.com/user-attachments/assets/8f84706c-f9d5-46ba-b3ae-bee7e986cafb)
+
 ####  With Weights & Biases Sweep
 ```bash
 wandb sweep sweep.yaml
 wandb agent <sweep-agent-endpoint>
 ```
+![Screenshot (57)](https://github.com/user-attachments/assets/baa091da-0c48-44ae-bd22-fc2338a22a94)
+![Screenshot (58)](https://github.com/user-attachments/assets/3d5aed95-e887-42f6-b8d7-de4baa2eb720)
+
 ### Track Experiments
 #### MLflow UI
 ```bash
 mlflow ui
 ```
+![Screenshot (59)](https://github.com/user-attachments/assets/2d20cf67-97bf-4989-a2cd-1ef35efc846a)
+![Screenshot (60)](https://github.com/user-attachments/assets/ba9566bd-3b4f-45e7-885e-5c62ae904449)
+
 #### Weights & Biases Dashboard
 Includes training loss, AUC, hyperparameter optimization, model comparison, etc.
 
@@ -104,6 +113,9 @@ python realtime_data_simulation.py
 ### Monitoring & Alerting
 - Lambda logs → CloudWatch
 - Open results/drift_report.html in web browser to monitor datadrift in real time data.
+![Screenshot (61)](https://github.com/user-attachments/assets/687e6843-5b28-47e7-8a6d-ba907fa1f054)
+![Screenshot (62)](https://github.com/user-attachments/assets/28204fb5-f741-4f67-956a-1701064d9548)
+![Screenshot (63)](https://github.com/user-attachments/assets/7ec97d73-d642-425a-a106-f73efed1c36a)
 
 ---
 # 👤 Author
